@@ -3,10 +3,9 @@
 # Matilde Moital Portugal Sampaio Teixeira 108193 (50%)
 
 # starts here
+
 # declarações
 
-declare -a temp_r=()
-declare -a temp_w=()
 declare -A arropt=()
 
 #i = 0

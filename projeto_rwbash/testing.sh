@@ -8,3 +8,5 @@
 #         echo "coisas"
 #         ;;
 # esac
+
+echo [0-9]
