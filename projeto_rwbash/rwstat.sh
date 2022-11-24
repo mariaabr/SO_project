@@ -4,27 +4,41 @@
 
 # STARTS HERE
 
-# declarações
+# declarations
 
-declare -a temp_r=()
-declare -a temp_w=()
+declare -A arrread=()
+declare -A arrwrite=()
 declare -A arropt=()
 
+sort_reverse=""
 #i = 0
-pid=$(ps -ef | grep 'p' | awk '{print $2}')
+pid=$(ps -ef | grep 'p' | awk '{print $2}') # ps command is used to list the currently running processes and their PIDs
+# along with some other information depends on different options
+# -ef restricts the processes running on the system in the standart format
 re='^[0-9]+([.][0-9]+)?$'
 timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-4]):[0-5][0-9]"
 
-# Validações
+# validations
 
 # if 
 #     (...)
 # fi
 
+if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
+# next to it and evaluates it as "True" if string is not empty
+    echo ""
+else
+    echo "ERROR: Cannot find any"
+fi
+
+
+
 if (($# == 0)); then
     echo "Please, insert some arguments"
     exit
 fi
+
+
 
 if [[ ${@: -1} =~ $re ]]; then
     if [[ ${@: -1} -ge 0 ]]; then
@@ -58,19 +72,19 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             ;;
         s) # especificação do período temporal - data mínima
             datemin=${arropt['s']}
-            start=$(date -d "$datemin" +%s);
-            if [[  == 'null' || ${datemin:0:1} == "-" || ! "${datemin}" =~ $timepattern ]]; then
+            if [[ $datemin == 'null' || ${datemin:0:1} == "-" || ! "${datemin}" =~ $timepattern ]]; then
                 echo "o argumento de '-s' é 'null' ou inválido"
                 exit 1
             fi
+            start=$(date -d "$datemin" +%s);
             ;;
         e) # especificação do período temporal - data máxima
             datemax=${arropt['e']}
-            end=$(date -d "$datemax" +%s);
-            if [[  == 'null' || ${datemax:0:1} == "-" || ! "${datemax}" =~ $timepattern ]]; then
+            if [[ $datemax == 'null' || ${datemax:0:1} == "-" || ! "${datemax}" =~ $timepattern ]]; then
                 echo "o argumento de '-e' é 'null' ou inválido"
                 exit 1
             fi
+            end=$(date -d "$datemax" +%s);
             ;;
         u) # seleção realizada pelo nome de utilizador
             user=${arropt['c']}
@@ -101,6 +115,7 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             fi
             ;;
         r) # sort reverse
+            sort_reverse="-r";
             echo "cucumber"
             ;;
         w) # sort nos valores do write
@@ -118,7 +133,21 @@ shift $((OPTIND - 1))
 
 # procurar e listar os processos
 
+for process in $pid; do
+    # echo $processos -> processos listados!!!
+    if [[ -d $process ]]; then # -d check if the directory exists or not
+        # cd ./$process
+        if [ -r ./io ]; then # o que é que isto faz ?!
+            rchar = $(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
+            wchar = $(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
+            
+            arrread[$process] = $rchar
+            arrwrite[$process] = $wchar
+        fi
 
+        # cd ../
+    fi
+done
 
 
 
