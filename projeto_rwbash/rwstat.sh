@@ -2,27 +2,43 @@
 # Maria Rafaela Alves Abrunhosa 107658 (50%)
 # Matilde Moital Portugal Sampaio Teixeira 108193 (50%)
 
-# starts here
-# declarações
+# STARTS HERE
 
-declare -a temp_r=()
-declare -a temp_w=()
+# declarations
+
+declare -A arrread=()
+declare -A arrwrite=()
 declare -A arropt=()
 
+sort_reverse=""
 #i = 0
-pid=$(ps -ef | grep 'p' | awk '{print $2}')
+pid=$(ps -ef | grep 'p' | awk '{print $2}') # ps command is used to list the currently running processes and their PIDs
+# along with some other information depends on different options
+# -ef restricts the processes running on the system in the standart format
 re='^[0-9]+([.][0-9]+)?$'
+timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-4]):[0-5][0-9]"
 
-# Validações
+# validations
 
 # if 
 #     (...)
 # fi
 
+if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
+# next to it and evaluates it as "True" if string is not empty
+    echo ""
+else
+    echo "ERROR: Cannot find any"
+fi
+
+
+
 if (($# == 0)); then
     echo "Please, insert some arguments"
     exit
 fi
+
+
 
 if [[ ${@: -1} =~ $re ]]; then
     if [[ ${@: -1} -ge 0 ]]; then
@@ -33,7 +49,7 @@ else
     exit 1
 fi
 
-printf "%d -> o valor dos segundos\n" "$segundos"
+# printf "%d -> o valor dos segundos\n" "$segundos"
 
 
 
@@ -42,7 +58,7 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
     if [[ -z "$OPTARG" ]]; then
         arropt[$options]="null"
     else
-        arropt[$options]=${OPTARG} #$OPTARG gets the value of the argument "linked" to the option
+        arropt[$options]=${OPTARG} # $OPTARG gets the value of the argument "linked" to the option
     fi
 
     case "$options" in
@@ -54,11 +70,21 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
                 exit 1
             fi
             ;;
-        s)
-            echo "cucumber"
+        s) # especificação do período temporal - data mínima
+            datemin=${arropt['s']}
+            if [[ $datemin == 'null' || ${datemin:0:1} == "-" || ! "${datemin}" =~ $timepattern ]]; then
+                echo "o argumento de '-s' é 'null' ou inválido"
+                exit 1
+            fi
+            start=$(date -d "$datemin" +%s);
             ;;
-        e)
-            echo "cucumber"
+        e) # especificação do período temporal - data máxima
+            datemax=${arropt['e']}
+            if [[ $datemax == 'null' || ${datemax:0:1} == "-" || ! "${datemax}" =~ $timepattern ]]; then
+                echo "o argumento de '-e' é 'null' ou inválido"
+                exit 1
+            fi
+            end=$(date -d "$datemax" +%s);
             ;;
         u) # seleção realizada pelo nome de utilizador
             user=${arropt['c']}
@@ -67,27 +93,37 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
                 exit 1
             fi
             ;;
-        m)
-            echo "cucumber"
+        m) # gama de pids - gama mínima # FAZER AS GAMAS!!!
+            gamamin=${arropt['m']}
+            if ! [[ $gamamin != 'null' || ${gamamin:0:1} != "-" || $gamamin =~ $re || $gamamin -ge 0 ]]; then
+                echo "o argumento de '-m' é 'null', inválido ou menor que 0"
+                exit 1
+            fi
             ;;
-        M)
-            echo "cucumber"
+        M) # gama de pids - gama máxima
+            gamamax=${arropt['M']}
+            if ! [[ $gamamax != 'null' || ${gamamax:0:1} != "-" || $gamamax =~ $re || $gamamax -ge 0 ]]; then
+                echo "o argumento de '-m' é 'null', inválido ou menor que 0"
+                exit 1
+            fi
             ;;
         p) # numero de processos a visualizar
             numproc=${arropt['p']}
-            if [[ $numproc =~ $re ]]; then
+            if ! [[ $numproc =~ $re ]]; then
                 echo "o argumento de '-p' é 'null' tem de ser um número"
                 exit 1
             fi
             ;;
-        r)
+        r) # sort reverse
+            sort_reverse="-r";
             echo "cucumber"
             ;;
-        w)
+        w) # sort nos valores do write
             echo "cucumber"
             ;;
-        *)
-            echo "cucumber"
+        *) # opção inválida
+            echo "ERROR: Unknown option"
+            exit 1
             ;;
     esac
 done
@@ -95,19 +131,39 @@ shift $((OPTIND - 1))
 
 
 
+# procurar e listar os processos
+
+for process in $pid; do
+    # echo $processos -> processos listados!!!
+    if [[ -d $process ]]; then # -d check if the directory exists or not
+        # cd ./$process
+        if [ -r ./io ]; then # o que é que isto faz ?!
+            rchar = $(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
+            wchar = $(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
+            
+            arrread[$process] = $rchar
+            arrwrite[$process] = $wchar
+        fi
+
+        # cd ../
+    fi
+done
 
 
 
 
 
 
-
-
-
-
+# sleep $segundos
 
 
 
 # PRINT da tabela
 # printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM", "USER", "PID", "READB", "WRITEB", "RATER", "RATEW", "DATE")
 # printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" COISAS)
+
+
+
+
+
+# ENDS HERE
