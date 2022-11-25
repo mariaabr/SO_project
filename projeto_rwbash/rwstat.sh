@@ -24,12 +24,12 @@ timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-3]):[0-5][0-9]"
 #     (...)
 # fi
 
-# if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
-# # next to it and evaluates it as "True" if string is not empty
-#     echo ""
-# else
-#     echo "ERROR: Cannot find any"
-# fi
+if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
+# next to it and evaluates it as "True" if string is not empty
+    echo ""
+else
+    echo "ERROR: Cannot find any"
+fi
 
 
 
@@ -135,34 +135,30 @@ shift $((OPTIND - 1))
 
 # procurar e listar os processos
 
-for process in $pid; do
-    echo $process # -> processos listados!!!
-    if [ -f $process/command ]; then # -f is a test command that will check if the file exists
-        # if [ -d $process ]; then # -d check if the directory exists or not
-            echo "estás aqui, patinho lindinho?"
+cd /proc
+for proc in $(ls | grep -E '^[0-9]+$'); do
+    if [[ -r $proc/status && -r $proc/io ]]; then
+        printf "%d -> o valor do proc (pid) \n" "$proc"
 
-            if [ -f $process/io]; then
-                if [ -f $process/status]; then
-                    cd ./$process
-                    if [ -r ./io ]; then # o que é que isto faz ?! -> verificações para ler o file
-                        rchar = $(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
-                        wchar = $(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
-                        
-                        echo "estás aqui, patinho?"
-                        printf "%d -> o valor do rchar \n" "$rchar"
-                        printf "%d -> o valor do wchar \n" "$wchar"
+        cd /proc/$proc
+        comm=$(cat comm)
+        printf "%s -> o valor do comm \n" "$comm"
 
-                        # arrread[$process] = $rchar
-                        # arrwrite[$process] = $wchar
-                    fi
-                fi
-            fi
+        userproc=$(ls -ld | awk '{print $3}')
+        printf "%s -> o valor do user \n" "$userproc"
 
-        cd ../
+        rchar = $(cat /proc/$proc/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
+        wchar = $(cat /proc/$proc/io | grep wchar | grep -o -E '[0-9]+')
+                
+        # echo "estás aqui, patinho?"
+        printf "%d -> o valor do rchar \n" "$rchar"
+        printf "%d -> o valor do wchar \n" "$wchar"
+
+        # arrread[$proc] = $rchar
+        # arrwrite[$proc] = $wchar
     fi
 done
-
-
+cd
 
 
 
@@ -173,7 +169,7 @@ done
 
 # PRINT da tabela
 # printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM", "USER", "PID", "READB", "WRITEB", "RATER", "RATEW", "DATE")
-# printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" COISAS)
+# printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "comm", "userproc", "proc", COISAS)
 
 
 
