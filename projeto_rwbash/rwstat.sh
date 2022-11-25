@@ -16,7 +16,7 @@ pid=$(ps -ef | grep 'p' | awk '{print $2}') # ps command is used to list the cur
 # along with some other information depends on different options
 # -ef restricts the processes running on the system in the standart format
 re='^[0-9]+([.][0-9]+)?$'
-timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-4]):[0-5][0-9]"
+timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-3]):[0-5][0-9]"
 
 # validations
 
@@ -24,12 +24,12 @@ timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-4]):[0-5][0-9]"
 #     (...)
 # fi
 
-if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
-# next to it and evaluates it as "True" if string is not empty
-    echo ""
-else
-    echo "ERROR: Cannot find any"
-fi
+# if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
+# # next to it and evaluates it as "True" if string is not empty
+#     echo ""
+# else
+#     echo "ERROR: Cannot find any"
+# fi
 
 
 
@@ -64,7 +64,7 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
     case "$options" in
         c) # seleção dos processos a visualizar através de uma expressão regular
             expreg=${arropt['c']}
-            if [[ $expreg == 'null' || ${expreg:0:1} == "-" || ${expreg} =~ $re ]]; then
+            if [[ $expreg == 'null'|| ${expreg:0:1} == "-" || ${expreg} =~ $re ]]; then
                 echo "é necessário que a seleção de processos seja feita através de uma expressão regular"
                 echo "o argumento de '-c' é 'null' ou inválido"
                 exit 1
@@ -88,6 +88,7 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             ;;
         u) # seleção realizada pelo nome de utilizador
             user=${arropt['c']}
+            echo "estou no user!"
             if [[ $user == 'null' || ${user:0:1} == "-" || ${user} =~ $re ]]; then
                 echo "o argumento de '-u' é 'null' ou inválido"
                 exit 1
@@ -109,6 +110,7 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             ;;
         p) # numero de processos a visualizar
             numproc=${arropt['p']}
+            echo "estou no p!"
             if ! [[ $numproc =~ $re ]]; then
                 echo "o argumento de '-p' é 'null' tem de ser um número"
                 exit 1
@@ -134,18 +136,29 @@ shift $((OPTIND - 1))
 # procurar e listar os processos
 
 for process in $pid; do
-    # echo $processos -> processos listados!!!
-    if [[ -d $process ]]; then # -d check if the directory exists or not
-        # cd ./$process
-        if [ -r ./io ]; then # o que é que isto faz ?!
-            rchar = $(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
-            wchar = $(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
-            
-            arrread[$process] = $rchar
-            arrwrite[$process] = $wchar
-        fi
+    echo $process # -> processos listados!!!
+    if [ -f $process/command ]; then # -f is a test command that will check if the file exists
+        # if [ -d $process ]; then # -d check if the directory exists or not
+            echo "estás aqui, patinho lindinho?"
 
-        # cd ../
+            if [ -f $process/io]; then
+                if [ -f $process/status]; then
+                    cd ./$process
+                    if [ -r ./io ]; then # o que é que isto faz ?! -> verificações para ler o file
+                        rchar = $(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
+                        wchar = $(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
+                        
+                        echo "estás aqui, patinho?"
+                        printf "%d -> o valor do rchar \n" "$rchar"
+                        printf "%d -> o valor do wchar \n" "$wchar"
+
+                        # arrread[$process] = $rchar
+                        # arrwrite[$process] = $wchar
+                    fi
+                fi
+            fi
+
+        cd ../
     fi
 done
 
