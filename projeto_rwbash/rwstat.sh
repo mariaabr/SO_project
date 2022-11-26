@@ -6,12 +6,15 @@
 
 # declarations
 
+declare -A arrproc=()
+declare -A arrcomms=()
+declare -A arrusers=()
 declare -A arrread=()
 declare -A arrwrite=()
 declare -A arropt=()
 
 sort_reverse=""
-#i = 0
+i=0
 pid=$(ps -ef | grep 'p' | awk '{print $2}') # ps command is used to list the currently running processes and their PIDs
 # along with some other information depends on different options
 # -ef restricts the processes running on the system in the standart format
@@ -136,26 +139,31 @@ shift $((OPTIND - 1))
 # procurar e listar os processos
 
 cd /proc
-for proc in $(ls | grep -E '^[0-9]+$'); do
-    if [[ -r $proc/status && -r $proc/io ]]; then
-        printf "%d -> o valor do proc (pid) \n" "$proc"
+for process in $(ls | grep -E '^[0-9]+$'); do
+    if [[ -r $process/status && -r $process/io ]]; then
+        arrproc[i]=$process
+        printf "%d -> o valor do proc (pid) \n" "$process"
 
-        cd /proc/$proc
+        cd /proc/$process
         comm=$(cat comm)
+        arrcomms[i]=$comm
         printf "%s -> o valor do comm \n" "$comm"
 
         userproc=$(ls -ld | awk '{print $3}')
+        arrusers[i]=$userproc
         printf "%s -> o valor do user \n" "$userproc"
 
-        rchar = $(cat /proc/$proc/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
-        wchar = $(cat /proc/$proc/io | grep wchar | grep -o -E '[0-9]+')
+        rchar=$(cat /proc/$process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
+        wchar=$(cat /proc/$process/io | grep wchar | grep -o -E '[0-9]+')
                 
         # echo "estás aqui, patinho?"
         printf "%d -> o valor do rchar \n" "$rchar"
         printf "%d -> o valor do wchar \n" "$wchar"
 
-        # arrread[$proc] = $rchar
-        # arrwrite[$proc] = $wchar
+        arrread[i]=$rchar
+        arrwrite[i]=$wchar
+
+        i=$((i+1))
     fi
 done
 cd
@@ -168,9 +176,11 @@ cd
 
 
 # PRINT da tabela
-# printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM", "USER", "PID", "READB", "WRITEB", "RATER", "RATEW", "DATE")
-# printf("%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "comm", "userproc", "proc", COISAS)
-
+for i in $arrproc[@]; do
+    echo "cucumber"
+    printf "%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
+    printf "%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "${arrcomms[i]}" "${arrusers[i]}" "${arrproc[i]}" "${arrread[i]}" "${arrwrite[i]}" "rater" "raterw" "COISAS"
+done
 
 
 
