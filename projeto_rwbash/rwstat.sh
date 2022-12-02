@@ -12,14 +12,17 @@ declare -A arrread=()
 declare -A arrwrite=()
 declare -A arropt=()
 
-sort_reverse=""
+sort_reverse=0
+order=1
+totalreverse=0
+totalorder=0
 #pid=$(ps -ef | grep 'p' | awk '{print $2}') # ps command is used to list the currently running processes and their PIDs
 # along with some other information depends on different options
 # -ef restricts the processes running on the system in the standart format
 re='^[0-9]+([.][0-9]+)?$'
 timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-3]):[0-5][0-9]"
 
-# validations
+# some validations
 
 # if 
 #     (...)
@@ -34,12 +37,10 @@ timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-3]):[0-5][0-9]"
 # fi
 
 
-
 if (($# == 0)); then
     echo "Please, insert some arguments"
     exit
 fi
-
 
 
 if [[ ${@: -1} =~ $re ]]; then
@@ -50,6 +51,7 @@ else
     echo "insert some seconds or the number you have chose is not a positive number"
     exit 1
 fi
+
 
 while getopts ":c:s:e:u:m:M:p:rw" options; do
 
@@ -77,7 +79,6 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             start=$(date -d "$datemin" +%s);
             ;;
         e) # especificação do período temporal - data máxima
-            printf "espinafres com arroz\n"
             datemax=${arropt['e']}
             if [[ $datemax == 'null' || ${datemax:0:1} == "-" || ! "${datemax}" =~ $timepattern ]]; then
                 echo "o argumento de '-e' é 'null' ou inválido"
@@ -117,11 +118,12 @@ while getopts ":c:s:e:u:m:M:p:rw" options; do
             fi
             ;;
         r) # sort reverse
-            sort_reverse="-r";
-            echo "cucumber"
+            ((totalreverse++))
+            sort_reverse=1
             ;;
         w) # sort nos valores do write
-            echo "cucumber"
+            ((totalorder++))
+            order=5
             ;;
         *) # opção inválida
             echo "ERROR: Unknown option"
@@ -132,6 +134,7 @@ done
 
 
 shift $((OPTIND - 1))
+
 
 # procurar e listar os processos
 
@@ -158,7 +161,9 @@ for process in $(ls | grep -E '^[0-9]+$'); do
 done
 cd
 
+
 sleep $segundos
+
 
 # segunda leitura
 
@@ -172,6 +177,9 @@ for process in $(ls | grep -E '^[0-9]+$'); do
         userproc=$(ps -o user= -p $pid)
         # printf "%s -> o valor do user \n" "$userproc"
         data=$(LC_ALL=EN_us.utf8 ls -ld /proc/$process | awk '{print $6 " " $7 " " $8}')
+        data_2=$(date -d "$data" +%s)
+
+
         # FILTRAR PROCESSOS COM CONDIÇÕES AQUI :))
 
         if [[ -v arropt[u] && ! ${arropt['u']} == $userproc ]]; then # -v tells the shell to run in verbose mode -> is useful
@@ -185,7 +193,34 @@ for process in $(ls | grep -E '^[0-9]+$'); do
             continue
         fi
 
-        # COISAS
+        # EHEHEH
+        
+        if [[ -v arropt[s] ]]; then
+            if [[ "$data_2" -lt "$start" ]]; then
+                continue
+            fi
+        fi
+        
+        if [[ -v arropt[e] ]]; then
+            if [[ "$data_2" -gt "$end" ]]; then
+                continue
+            fi
+        fi
+
+        # EHEHEH
+
+        if [[ -v arropt[m] ]]; then
+            if [[ "$pid" -lt "$gamamin" ]]; then
+                continue
+            fi
+        fi
+        
+        if [[ -v arropt[M] ]]; then
+            if [[ "$pid" -gt "$gamamax" ]]; then
+                continue
+            fi
+        fi
+
         
         rchar_2=$(cat $process/io | grep rchar | grep -o -E '[0-9]+')
         wchar_2=$(cat $process/io | grep wchar | grep -o -E '[0-9]+')
@@ -215,6 +250,19 @@ for process in $(ls | grep -E '^[0-9]+$'); do
 done
 
 
+# more validations
+
+if [[ $totalreverse -gt 1 ]]; then
+    echo "ERROR: incompatible commands (-r > 1)"
+    exit 1
+fi
+
+if [[ $totalorder -gt 1 ]]; then
+    echo "ERROR: incompatible commands (-w > 1)"
+    exit 1
+fi
+
+
 # PRINT da tabela
 
 if ! [[ -v arropt[p] ]]; then
@@ -225,6 +273,17 @@ else
 fi
 
 printf "%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
-printf '%s \n' "${arrproc[@]}" | head -n $p
+
+# printf '%s \n' "${arrproc[@]}" | head -n $p
+
+if [[ $order -ne 1 && $sort_reverse -eq 0 ]]; then
+    printf "%s \n" "${arrproc[@]}" | sort -k${order}rn | head -n $p
+elif [[ $order -ne 1 && $sort_reverse -eq 1 ]]; then
+    printf "%s \n" "${arrproc[@]}" | sort -k${order}n | head -n $p
+elif [[ $order -eq 1 && $sort_reverse -eq 1 ]]; then
+    printf "%s \n" "${arrproc[@]}" | sort -k${order} -f -r| head -n $p
+else
+    printf "%s \n" "${arrproc[@]}" | sort -k${order} -f | head -n $p
+fi
 
 # ENDSHERE
