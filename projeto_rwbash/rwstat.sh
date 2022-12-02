@@ -136,6 +136,19 @@ done
 shift $((OPTIND - 1))
 
 
+# more validations
+
+if [[ $totalreverse -gt 1 ]]; then
+    echo "ERROR: incompatible commands (-r > 1)"
+    exit 1
+fi
+
+if [[ $totalorder -gt 1 ]]; then
+    echo "ERROR: incompatible commands (-w > 1)"
+    exit 1
+fi
+
+
 # procurar e listar os processos
 
 cd /proc
@@ -248,19 +261,6 @@ for process in $(ls | grep -E '^[0-9]+$'); do
         arrproc[$pid]=$(printf "%-20s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "$comm" "$userproc" "$pid" "$subread" "$subwrite" "$rater" "$ratew" "$data")   
     fi
 done
-
-
-# more validations
-
-if [[ $totalreverse -gt 1 ]]; then
-    echo "ERROR: incompatible commands (-r > 1)"
-    exit 1
-fi
-
-if [[ $totalorder -gt 1 ]]; then
-    echo "ERROR: incompatible commands (-w > 1)"
-    exit 1
-fi
 
 
 # PRINT da tabela
