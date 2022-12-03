@@ -24,18 +24,6 @@ timepattern="[A-Za-z]{3} ([0-2][1-9]|[3][0-1]) ([0-1][0-9]|[2][0-3]):[0-5][0-9]"
 
 # some validations
 
-# if 
-#     (...)
-# fi
-
-# if [[ -n $pid ]]; then # -n evaluates the expressions in bash -> tests the string
-# # next to it and evaluates it as "True" if string is not empty
-#     echo ""
-# else
-#     echo "ERROR: Cannot find any"
-#     exit 1
-# fi
-
 
 if (($# == 0)); then
     echo "Please, insert some arguments"
@@ -155,13 +143,10 @@ cd /proc
 for process in $(ls | grep -E '^[0-9]+$'); do
     if [[ -r $process/status && -r $process/io ]]; then
         pid=$(cat $process/status | grep -w Pid | tr -dc '0-9' )
-        #printf "%d -> o valor do proc (pid) \n" "$pid"
                     
         rchar=$(cat $process/io | grep rchar | grep -o -E '[0-9]+') # "|" pipe chains commands together -> takes the output from one command and feeds it to the next as input
         wchar=$(cat $process/io | grep wchar | grep -o -E '[0-9]+')
                 
-        #printf "%d -> o valor do rchar \n" "$rchar"
-        #printf "%d -> o valor do wchar \n" "$wchar"
 
         if [[ $rchar == 0 && $wchar == 0 ]]; then
             continue
@@ -184,29 +169,27 @@ cd /proc
 for process in $(ls | grep -E '^[0-9]+$'); do
     if [[ -r $process/status && -r $process/io ]]; then
         pid=$(cat $process/status | grep -w Pid | tr -dc '0-9' )
-        #printf "%d -> o valor do proc (pid) 2\n" "$pid"
+
         comm=$(cat $process/comm | tr " " "_") # ir buscar o comm,e retirar os espaços e substituir por '_' nos comm's com 2 nomes
-        #printf "%s -> o valor do comm 2\n" "$comm"
+
         userproc=$(ps -o user= -p $pid)
-        # printf "%s -> o valor do user \n" "$userproc"
+
         data=$(LC_ALL=EN_us.utf8 ls -ld /proc/$process | awk '{print $6 " " $7 " " $8}')
         data_2=$(date -d "$data" +%s)
 
 
-        # FILTRAR PROCESSOS COM CONDIÇÕES AQUI :))
+        # FILTRAR PROCESSOS COM CONDIÇÕES AQUI
 
         if [[ -v arropt[u] && ! ${arropt['u']} == $userproc ]]; then # -v tells the shell to run in verbose mode -> is useful
         # in locating the line of the script that as created an error
             continue # se não existir o user escolhido não adiciona à lista
         fi
 
-        # EHEHEH
 
         if [[ -v arropt[c] && ! $comm =~ ${arropt['c']} ]]; then # escolhe quais "$comm" se adequam ao padrão inserido
             continue
         fi
 
-        # EHEHEH
         
         if [[ -v arropt[s] ]]; then
             if [[ "$data_2" -lt "$start" ]]; then
@@ -220,7 +203,6 @@ for process in $(ls | grep -E '^[0-9]+$'); do
             fi
         fi
 
-        # EHEHEH
 
         if [[ -v arropt[m] ]]; then
             if [[ "$pid" -lt "$gamamin" ]]; then
@@ -239,10 +221,7 @@ for process in $(ls | grep -E '^[0-9]+$'); do
         wchar_2=$(cat $process/io | grep wchar | grep -o -E '[0-9]+')
 
         subread=$(($rchar_2 - ${arrread[$pid]}))
-        #echo "calculo $subread"
-        #printf "eu vou comer\n"
         subwrite=$(($wchar_2 - ${arrwrite[$pid]}))
-        #echo "calculo 2 $subwrite"
 
 
         if [[ $subread == 0 && $subwrite == 0 ]]; then
@@ -252,15 +231,12 @@ for process in $(ls | grep -E '^[0-9]+$'); do
             ratew=$(bc <<<"scale=2; $subwrite/$segundos")
             rater=${rater/#./0.}
             ratew=${ratew/#./0.}
-            # echo "calculo 3 $rater"
-            # echo "calculo 4 $ratew"
-            # printf "%s -> o valor do rater 2\n" "$rater"
-            # printf "%s -> o valor do ratew 2\n" "$ratew"
         fi
 
-        arrproc[$pid]=$(printf "%-20s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "$comm" "$userproc" "$pid" "$subread" "$subwrite" "$rater" "$ratew" "$data")   
+        arrproc[$pid]=$(printf "%-20s %-13s %8s %11s %11s %11s %11s %13s\n" "$comm" "$userproc" "$pid" "$subread" "$subwrite" "$rater" "$ratew" "$data")   
     fi
 done
+cd
 
 
 # PRINT da tabela
@@ -272,7 +248,8 @@ else
     p=${arropt['p']} # numero de processos inserido
 fi
 
-printf "%-15s %-13s %8s %11s %11s %11s %11s %13s %13s %13s\n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
+printf "%-20s %-13s %8s %11s %11s %11s %11s %13s\n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
+
 
 # printf '%s \n' "${arrproc[@]}" | head -n $p
 
